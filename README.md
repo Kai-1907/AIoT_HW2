@@ -69,10 +69,10 @@
 
 ## 📊 範例輸出
 
-RMSE: 0.2482
-R²: 0.2821
-Cross-Validation R² (平均): 0.2715
-AUC Score: 0.7142
+- RMSE: 0.2482
+- R²: 0.2821
+- Cross-Validation R² (平均): 0.2715
+- AUC Score: 0.7142
 
 
 
