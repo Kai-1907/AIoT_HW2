@@ -75,7 +75,9 @@ Cross-Validation R² (平均): 0.2715
 AUC Score: 0.7142
 
 
-#### NotebookLM
+
+
+## NotebookLM
 
 根據您上傳的「線性回歸分析專案」檔案，此處將對**該線性回歸解法**與**Kaggle「Give Me Some Credit」競賽中網路上常見的其他解法**進行研究分析和比較。
 
