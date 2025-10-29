@@ -1,6 +1,5 @@
-# main.py
 # --------------------------------------------------------
-# GiveMeSomeCredit 線性回歸分析
+# Give Me Some Credit - Linear Regression 模型分析
 # 作者: [你的名字]
 # --------------------------------------------------------
 
@@ -11,59 +10,54 @@ import seaborn as sns
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, roc_auc_score
 from sklearn.feature_selection import SelectKBest, f_regression
-
 import statsmodels.api as sm
+from statsmodels.tsa.ar_model import AutoReg
 
 # --------------------------------------------------------
-# 1. 資料載入
+# 1. 資料載入與清理
 # --------------------------------------------------------
 print("🔹 載入資料中...")
-data = pd.read_csv("cs-training.csv")  # Kaggle 原始資料檔
 
-# 檢查資料
-print("資料筆數:", data.shape)
-print(data.head())
-
-# --------------------------------------------------------
-# 2. 資料清理
-# --------------------------------------------------------
-print("🔹 資料清理中...")
-
-# 移除無意義欄位 (如 ID)
+data = pd.read_csv("cs-training.csv")  # Kaggle 原始資料
 if 'Unnamed: 0' in data.columns:
     data = data.drop(columns=['Unnamed: 0'])
 
-# 處理遺失值 (以中位數補值)
+print(f"資料筆數: {data.shape}")
+print(data.head())
+
+# 缺失值補中位數
 data = data.fillna(data.median())
 
-# 目標變數: SeriousDlqin2yrs (是否在2年內違約)
+# 目標與特徵
 y = data['SeriousDlqin2yrs']
 X = data.drop(columns=['SeriousDlqin2yrs'])
 
 # --------------------------------------------------------
-# 3. 特徵選擇 (Feature Selection)
+# 2. 特徵選擇 (Feature Selection)
 # --------------------------------------------------------
-print("🔹 進行特徵選擇...")
-
+print("🔹 特徵選擇中...")
 selector = SelectKBest(score_func=f_regression, k=5)
 X_new = selector.fit_transform(X, y)
 selected_features = X.columns[selector.get_support()]
-print("選擇的特徵:", list(selected_features))
+print("✅ 選擇的特徵:", list(selected_features))
 
 X = X[selected_features]
 
 # --------------------------------------------------------
-# 4. 建立與訓練模型 (多元線性回歸)
+# 3. 訓練 / 測試資料分割
+# --------------------------------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# --------------------------------------------------------
+# 4. 模型建立與訓練 (多元線性回歸)
 # --------------------------------------------------------
 print("🔹 建立線性回歸模型...")
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
 lr = LinearRegression()
 lr.fit(X_train, y_train)
-
 y_pred = lr.predict(X_test)
 
 # --------------------------------------------------------
@@ -72,18 +66,19 @@ y_pred = lr.predict(X_test)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2 = r2_score(y_test, y_pred)
 cv_scores = cross_val_score(lr, X, y, cv=5, scoring='r2')
+auc = roc_auc_score(y_test, y_pred)
 
 print("\n🔹 模型評估結果")
 print(f"RMSE: {rmse:.4f}")
 print(f"R²: {r2:.4f}")
 print(f"Cross-Validation R² (平均): {cv_scores.mean():.4f}")
+print(f"AUC Score: {auc:.4f}")
 
 # --------------------------------------------------------
-# 6. 預測結果視覺化 (含信賴區間)
+# 6. 預測結果視覺化 (含預測區間)
 # --------------------------------------------------------
 print("🔹 繪製預測圖...")
 
-# 使用 statsmodels 取得信賴區間
 X_const = sm.add_constant(X_test)
 model_sm = sm.OLS(y_test, X_const).fit()
 predictions = model_sm.get_prediction(X_const)
@@ -92,8 +87,10 @@ pred_summary = predictions.summary_frame(alpha=0.05)  # 95% 信賴區間
 plt.figure(figsize=(8,6))
 plt.scatter(y_test, y_pred, alpha=0.6, color='blue', label='預測值')
 plt.plot([0,1],[0,1],'r--')
-plt.fill_between(y_test, pred_summary["obs_ci_lower"], pred_summary["obs_ci_upper"],
-                 color='gray', alpha=0.3, label='95% 預測區間')
+plt.fill_between(
+    y_test, pred_summary["obs_ci_lower"], pred_summary["obs_ci_upper"],
+    color='gray', alpha=0.3, label='95% 預測區間'
+)
 plt.xlabel("實際值 (True Values)")
 plt.ylabel("預測值 (Predicted Values)")
 plt.title("線性回歸預測結果 (含預測區間)")
@@ -101,16 +98,14 @@ plt.legend()
 plt.show()
 
 # --------------------------------------------------------
-# 7. Auto Regression (自動回歸示例)
+# 7. Auto Regression 範例
 # --------------------------------------------------------
 print("🔹 嘗試 Auto Regression (AR 模型)...")
 
-# 以「RevolvingUtilizationOfUnsecuredLines」為示例特徵
 series = data["RevolvingUtilizationOfUnsecuredLines"]
 train_size = int(len(series) * 0.8)
 train, test = series[:train_size], series[train_size:]
 
-from statsmodels.tsa.ar_model import AutoReg
 ar_model = AutoReg(train, lags=3)
 ar_fit = ar_model.fit()
 pred_ar = ar_fit.predict(start=len(train), end=len(train)+len(test)-1)
@@ -121,3 +116,21 @@ plt.plot(pred_ar.values, label="AutoReg預測", linestyle='--')
 plt.title("Auto Regression 模型示例")
 plt.legend()
 plt.show()
+
+# --------------------------------------------------------
+# 8. 產生 Kaggle 提交檔
+# --------------------------------------------------------
+print("🔹 生成 Kaggle 提交檔...")
+
+# 用完整資料重訓模型再預測
+lr_final = LinearRegression()
+lr_final.fit(X, y)
+y_pred_final = lr_final.predict(X)
+
+submission = pd.DataFrame({
+    "Id": range(1, len(y_pred_final) + 1),
+    "Probability": y_pred_final
+})
+submission.to_csv("submission.csv", index=False)
+
+print("✅ 已生成 submission.csv，可上傳至 Kaggle！")
