@@ -1,51 +1,60 @@
-1️⃣ Business Understanding
+# Give Me Some Credit - Linear Regression Analysis
 
-本專案目的為建立信用風險預測模型，利用個人信貸資料（10 個特徵）預測借款人是否會於兩年內發生嚴重逾期。此分析可協助金融機構預測潛在風險、優化核貸政策。
+使用 Kaggle [Give Me Some Credit](https://www.kaggle.com/c/GiveMeSomeCredit/) 資料集進行 **線性回歸分析**，包含：
+- 單純線性回歸、多元線性回歸與 Auto Regression
+- 特徵選擇 (Feature Selection)
+- 模型評估 (Model Evaluation)
+- 信賴區間 / 預測區間視覺化
+- 依據 CRISP-DM 流程設計
 
-2️⃣ Data Understanding
+---
 
-資料來源：Kaggle「Give Me Some Credit」競賽
+## 🚀 CRISP-DM 流程說明
 
-樣本數：約 150,000 筆
+### 1️⃣ Business Understanding
+目標為預測個人兩年內發生信用違約 (SeriousDlqin2yrs)，以協助金融機構預先識別高風險客戶，降低貸款損失風險。
 
-特徵數：10 個（如收入、年齡、逾期次數等）
+### 2️⃣ Data Understanding
+資料集包含 150,000 筆樣本、10 個特徵：
+- RevolvingUtilizationOfUnsecuredLines
+- age
+- NumberOfTime30-59DaysPastDueNotWorse
+- DebtRatio
+- MonthlyIncome
+- NumberOfOpenCreditLinesAndLoans
+- NumberOfTimes90DaysLate
+- NumberRealEstateLoansOrLines
+- NumberOfTime60-89DaysPastDueNotWorse
+- NumberOfDependents
 
-目標變數：SeriousDlqin2yrs (0 = 未違約, 1 = 違約)
+### 3️⃣ Data Preparation
+- 移除無用欄位 (ID)
+- 以中位數補值處理缺失
+- 使用 `SelectKBest(f_regression)` 進行特徵選擇，選出最具預測力的前五項變數。
 
-3️⃣ Data Preparation
+### 4️⃣ Modeling
+- 使用 **多元線性回歸 (Linear Regression)** 建立模型。
+- 額外使用 **Auto Regression (AR)** 模型示範時間序列自動回歸。
+- 模型以 80/20 分割訓練與測試資料。
 
-缺失值補齊：以中位數填補 MonthlyIncome、NumberOfDependents
+### 5️⃣ Evaluation
+- 指標：
+  - RMSE (Root Mean Squared Error)
+  - R² Score
+  - Cross-Validation (5-fold)
+- 可視化結果：
+  - 預測 vs 實際值 散點圖
+  - 預測區間 (95% Confidence Interval)
 
-標準化特徵
+### 6️⃣ Deployment
+- 將模型與程式整合為 `main.py`
+- 可上傳至 GitHub
+- 未來可擴展至自動化風險評估系統或整合金融信貸 API
 
-訓練/測試資料劃分（80/20）
+---
 
-4️⃣ Modeling
+## 📦 環境需求
 
-模型類型：多元線性回歸 (sklearn LinearRegression)
+```bash
+pip install pandas numpy matplotlib seaborn scikit-learn statsmodels
 
-特徵選擇方法：使用遞迴特徵消除法 (RFE) 或 Lasso Regression
-
-使用 statsmodels 建立含信賴區間的模型報表
-
-5️⃣ Evaluation
-
-使用 MAE、MSE、R² 進行評估
-
-繪製預測 vs. 實際值圖
-
-加入 95% 信賴區間與預測區間
-
-6️⃣ Deployment
-
-此專案可於任何 Python 環境 (>=3.9) 執行。未來可延伸為自動化信用風險預測 API 或金融儀表板。
-
-📈 預測圖範例 (prediction_plot.png)
-
-X 軸：實際值
-
-Y 軸：預測值
-
-中心線：理想預測 (y = x)
-
-陰影部分：95% 信賴區間
